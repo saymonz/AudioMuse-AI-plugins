@@ -4,20 +4,20 @@ import json
 import os
 import sys
 
-from flask import Flask
 import pytest
+from flask import Flask
 
 PLUGIN_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS_DIR = os.path.join(PLUGIN_REPO_ROOT, 'scripts')
 if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
-import build_catalog  # noqa: E402
-import config  # noqa: E402
-import database  # noqa: E402
-from plugin import api as plugin_api  # noqa: E402
-from plugin import manager as plugin_mgr  # noqa: E402
-import tasks._playlist_namer as core_namer  # noqa: E402
+import build_catalog
+import config
+import database
+import tasks._playlist_namer as core_namer
+from plugin import api as plugin_api
+from plugin import manager as plugin_mgr
 
 
 class _FakeDB:
@@ -220,6 +220,22 @@ class TestPlaylistNamingPlugin:
             assert run2.format_name('Rock') == 'NewFolder/Rock'
             assert run2.should_delete({'Id': 'old-id-1', 'Name': 'OldFolder/Rock'}) is True
             assert run2.should_delete({'Id': 'user-id', 'Name': 'My Rock'}) is False
+
+    def test_clean_legacy_automatic_catches_single_and_split_playlists(self, loaded_plugin):
+        app, _mgr, _fake_db, settings_store = loaded_plugin
+        settings_store['playlist_naming'] = {
+            'prefix': 'Audiomuse/',
+            'suffix': '',
+            'clean_matching_affixes': True,
+            'clean_legacy_automatic': True,
+        }
+
+        with app.app_context():
+            namer = core_namer.get_playlist_namer()
+            assert namer.should_delete({'Id': '1', 'Name': 'Chill_automatic'}) is True
+            assert namer.should_delete({'Id': '2', 'Name': 'Chill_automatic (1)'}) is True
+            assert namer.should_delete({'Id': '3', 'Name': 'Chill_automatic (12)'}) is True
+            assert namer.should_delete({'Id': '4', 'Name': 'My_automatic_favorites'}) is False
 
     def test_settings_get_and_post_roundtrip(self, loaded_plugin):
         app, _mgr, _fake_db, settings_store = loaded_plugin

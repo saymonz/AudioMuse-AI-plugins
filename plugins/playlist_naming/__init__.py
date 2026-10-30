@@ -15,9 +15,9 @@ Uses only the public ``plugin.api`` surface and ``register_clustering_provider``
 """
 
 import html
+import re
 
 from flask import Blueprint, redirect, request, url_for
-
 from plugin.api import (
     active_server_id,
     get_db,
@@ -33,6 +33,7 @@ bp = Blueprint('playlist_naming', __name__)
 
 _DEFAULT_SERVER_KEY = '__default__'
 _MAX_AFFIX_LEN = 80
+_LEGACY_AUTOMATIC_RE = re.compile(r'_automatic(?: \(\d+\))?$')
 
 
 def _sanitize_affix(value):
@@ -135,7 +136,7 @@ class _PlaylistNamer:
         if not isinstance(playlist_name, str) or not playlist_name:
             return None
         if not self.prefix and not self.suffix:
-            return None if playlist_name.endswith('_automatic') else playlist_name
+            return None
         min_len = len(self.prefix) + len(self.suffix)
         if len(playlist_name) <= min_len:
             return None
@@ -153,7 +154,7 @@ class _PlaylistNamer:
         name = _playlist_name(playlist)
         if not name:
             return False
-        if self.clean_legacy_automatic and name.endswith('_automatic'):
+        if self.clean_legacy_automatic and _LEGACY_AUTOMATIC_RE.search(name):
             return True
         if self.clean_matching_affixes and (self.prefix or self.suffix):
             min_len = len(self.prefix) + len(self.suffix)
@@ -259,8 +260,8 @@ def _render_settings_html(prefix, suffix, clean_matching, clean_legacy, saved=Fa
         if saved
         else ''
     )
-    sample_single = html.escape(f"{prefix}Midnight Jazz{suffix}" or "Midnight Jazz")
-    sample_chunk = html.escape(f"{prefix}Midnight Jazz (1){suffix}" or "Midnight Jazz (1)")
+    sample_single = html.escape(f"{prefix}Midnight Jazz{suffix}")
+    sample_chunk = html.escape(f"{prefix}Midnight Jazz (1){suffix}")
     return f"""
     <div style="max-width:680px;">
         {banner}
@@ -366,4 +367,4 @@ def register(ctx):
     ctx.on_install(migrate)
     ctx.on_worker_start(_on_worker_boot)
     ctx.add_blueprint(bp)
-    ctx.register_clustering_provider('playlist_naming', _build_namer, cache=False)
+    ctx.register_clustering_provider('playlist_naming', _build_namer)
