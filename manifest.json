@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "id": "playlist_naming",
+      "name": "Playlist Naming",
+      "author": "saymonz",
+      "description": "Customize clustering playlist prefixes, suffixes, virtual folders, or bare names with safe per-server ID tracking.",
+      "pluginUrl": "https://raw.githubusercontent.com/saymonz/AudioMuse-AI-plugins/main/plugins/playlist_naming/plugin.json"
+    }
+  ]
+}

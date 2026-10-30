@@ -1,0 +1,16 @@
+{
+  "id": "playlist_naming",
+  "name": "Playlist Naming",
+  "author": "saymonz",
+  "description": "Customize clustering playlist prefixes, suffixes, virtual folders, or bare names with safe per-server ID tracking.",
+  "requirements": [],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "min_core_version": "3.7.0",
+      "changelog": "Initial release using the register_clustering_provider('playlist_naming', ...) core API.",
+      "sourceUrl": "https://raw.githubusercontent.com/saymonz/AudioMuse-AI-plugins/main/releases/playlist_naming-1.0.0.zip",
+      "checksum": "eb4ee774bcc081b6185901dcd9e4be91"
+    }
+  ]
+}
