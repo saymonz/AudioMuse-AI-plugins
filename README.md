@@ -2,6 +2,12 @@
 
 Custom plugin repository for [AudioMuse-AI](https://github.com/NeptuneHub/AudioMuse-AI).
 
+> [!WARNING]
+> **Experimental Core Branch Required**  
+> The `playlist_naming` plugin relies on the `register_clustering_provider('playlist_naming', ...)` plugin seam. This core extension is currently implemented on the experimental branch [`feature/plugin-clustering-provider`](https://github.com/saymonz/AudioMuse-AI/tree/feature/plugin-clustering-provider) and deployed via custom overlay images [`ghcr.io/saymonz/audiomuse-ai`](https://github.com/saymonz/AudioMuse-AI/pkgs/container/audiomuse-ai).
+>
+> It will **not function on stock upstream AudioMuse-AI releases** until the underlying core hook is merged into upstream.
+
 ## Installation
 
 1. Open AudioMuse-AI as an administrator and go to **Plugins > Repositories**.
