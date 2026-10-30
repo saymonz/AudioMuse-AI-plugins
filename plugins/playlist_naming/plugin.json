@@ -10,7 +10,7 @@
       "min_core_version": "3.7.0",
       "changelog": "Initial release using the register_clustering_provider('playlist_naming', ...) core API.",
       "sourceUrl": "https://raw.githubusercontent.com/saymonz/AudioMuse-AI-plugins/main/releases/playlist_naming-1.0.0.zip",
-      "checksum": "eb4ee774bcc081b6185901dcd9e4be91"
+      "checksum": "1643952c38add1167cecf44a88a44e7f"
     }
   ]
 }

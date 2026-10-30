@@ -55,19 +55,10 @@ class _FakeCursor:
             self._db.rows[(server_id, playlist_id)] = name
             self._result = []
             return
-        if 'DELETE FROM ' in text and 'NOT (playlist_id = ANY(' in text:
-            server_id, surviving = params
-            keep = set(surviving)
-            for key in list(self._db.rows):
-                if key[0] == server_id and key[1] not in keep:
-                    del self._db.rows[key]
-            self._result = []
-            return
-        if text.startswith('DELETE FROM '):
-            server_id = params[0]
-            for key in list(self._db.rows):
-                if key[0] == server_id:
-                    del self._db.rows[key]
+        if text.startswith('DELETE FROM ') and 'playlist_id = ANY(' in text:
+            server_id, gone = params
+            for pid in gone:
+                self._db.rows.pop((server_id, pid), None)
             self._result = []
             return
         raise AssertionError(f"Unexpected SQL: {text}")
@@ -155,7 +146,7 @@ class TestPlaylistNamingPlugin:
 
         with app.app_context():
             namer = core_namer.get_playlist_namer()
-            assert namer.is_default is False
+            assert namer.owner == 'playlist_naming'
             assert namer.format_name('Midnight Jazz') == 'Audiomuse/Midnight Jazz'
             assert namer.format_name('Midnight Jazz', chunk_index=2) == 'Audiomuse/Midnight Jazz (2)'
             assert namer.unformat_name('Audiomuse/Midnight Jazz') == 'Midnight Jazz'
@@ -195,6 +186,25 @@ class TestPlaylistNamingPlugin:
 
             namer2.after_cleanup(['auto-1'], server_playlists)
             assert set(fake_db.rows.keys()) == {('__default__', 'auto-2')}
+
+    def test_empty_listing_never_forgets_tracked_ids(self, loaded_plugin):
+        app, _mgr, fake_db, settings_store = loaded_plugin
+        settings_store['playlist_naming'] = {'prefix': '', 'suffix': ''}
+
+        with app.app_context():
+            run1 = core_namer.get_playlist_namer()
+            run1.on_created({'Id': 'auto-1', 'Name': 'Velvet Soul'}, 'Velvet Soul')
+            run1.on_created({'Id': 'auto-2', 'Name': 'Synth Nights'}, 'Synth Nights')
+
+            # Media server unreachable: get_all_playlists() returned [] and nothing was deleted
+            run2 = core_namer.get_playlist_namer()
+            run2.after_cleanup([], [])
+            assert set(fake_db.rows) == {('__default__', 'auto-1'), ('__default__', 'auto-2')}
+
+            # A real listing still forgets playlists the user removed by hand
+            run3 = core_namer.get_playlist_namer()
+            run3.after_cleanup([], [{'Id': 'auto-2', 'Name': 'Synth Nights'}])
+            assert set(fake_db.rows) == {('__default__', 'auto-2')}
 
     def test_prefix_transition_still_cleans_previously_tracked_ids(self, loaded_plugin):
         app, _mgr, _fake_db, settings_store = loaded_plugin

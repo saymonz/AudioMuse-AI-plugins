@@ -195,28 +195,28 @@ class _PlaylistNamer:
             cur.close()
 
     def after_cleanup(self, deleted_ids, playlists):
-        deleted_set = {str(i) for i in (deleted_ids or []) if i}
+        # Only forget what is known to be gone. get_all_playlists() returns []
+        # on a transient media-server error, so an empty listing must never be
+        # read as "every tracked playlist vanished".
+        gone = {str(i) for i in (deleted_ids or []) if i}
         present_ids = {_playlist_id(p) for p in (playlists or [])}
         present_ids.discard('')
-        surviving = sorted((present_ids - deleted_set) & self.tracked_ids)
-        self.tracked_ids = set(surviving)
+        if present_ids:
+            gone |= self.tracked_ids - present_ids
+        gone &= self.tracked_ids
+        if not gone:
+            return
+        self.tracked_ids -= gone
         tbl = table('playlists')
         db = get_db()
         cur = db.cursor()
         try:
             cur.execute("SAVEPOINT pn_prune_tracked")
             try:
-                if surviving:
-                    cur.execute(
-                        f"DELETE FROM {tbl} "
-                        "WHERE server_id = %s AND NOT (playlist_id = ANY(%s))",
-                        (self.server_key, surviving),
-                    )
-                else:
-                    cur.execute(
-                        f"DELETE FROM {tbl} WHERE server_id = %s",
-                        (self.server_key,),
-                    )
+                cur.execute(
+                    f"DELETE FROM {tbl} WHERE server_id = %s AND playlist_id = ANY(%s)",
+                    (self.server_key, sorted(gone)),
+                )
                 cur.execute("RELEASE SAVEPOINT pn_prune_tracked")
                 db.commit()
             except Exception:
